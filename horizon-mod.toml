@@ -1,0 +1,16 @@
+id = "skills"
+name = "Skills"
+version = "0.1.0"
+description = "Earn skill experience by playing, share it with friends nearby, and unlock permanent perks in skill trees."
+authors = ["ameliiom"]
+license = "MIT"
+# A native mod: Rust in src/, compiled by the launcher against the game build [native] pins.
+api = "0.2"
+side = "both"
+# registries: required for content mods (the launcher asks for it).
+capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "f037744a79f9982c47876f49c5a3067279f88706"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"

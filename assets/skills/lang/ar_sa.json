@@ -1,0 +1,15 @@
+{
+  "key.skills.open": "المهارات",
+  "skills.tree.mining": "التعدين",
+  "skills.node.mining.haste_1": "يد سريعة",
+  "skills.node.mining.haste_2": "ضربات عميقة",
+  "skills.node.mining.reach": "مدى أبعد",
+  "skills.level": "%s %s",
+  "skills.points": "النقاط: %s",
+  "skills.cost": "التكلفة: %s",
+  "skills.toast.point": "+1 نقطة",
+  "skills.not_served": "مود المهارات غير موجود في هذا السيرفر",
+  "skills.config.share_radius": "مدى المشاركة",
+  "skills.config.share_fraction": "حصة الأصدقاء",
+  "skills.config.toasts": "إشعار رفع المستوى"
+}

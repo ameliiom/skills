@@ -1,0 +1,19 @@
+{
+  "title": "skills.tree.mining",
+  "icon": "minecraft:iron_pickaxe",
+  "background": "minecraft:block/stone",
+  "order": 2,
+  "curve": { "base": 50, "step": 25 },
+  "sources": [
+    { "stat": "minecraft:mined", "of": "#minecraft:mineable/pickaxe", "xp": 1 },
+    { "stat": "minecraft:mined", "of": "#c:ores", "xp": 8 }
+  ],
+  "nodes": [
+    { "id": "haste_1", "icon": "minecraft:golden_pickaxe", "at": [0, 0], "cost": 1,
+      "perks": [{ "attribute": "minecraft:block_break_speed", "amount": 0.1, "operation": "add_multiplied_base" }] },
+    { "id": "haste_2", "icon": "minecraft:diamond_pickaxe", "at": [1, 0], "cost": 2, "needs": ["haste_1"],
+      "perks": [{ "attribute": "minecraft:block_break_speed", "amount": 0.15, "operation": "add_multiplied_base" }] },
+    { "id": "reach", "icon": "minecraft:spyglass", "at": [1, 1], "cost": 2, "needs": ["haste_1"],
+      "perks": [{ "attribute": "minecraft:block_interaction_range", "amount": 1, "operation": "add_value" }] }
+  ]
+}

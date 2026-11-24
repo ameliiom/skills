@@ -1,0 +1,15 @@
+{
+  "key.skills.open": "Skills",
+  "skills.tree.mining": "Mining",
+  "skills.node.mining.haste_1": "Quick Hands",
+  "skills.node.mining.haste_2": "Deep Strikes",
+  "skills.node.mining.reach": "Long Reach",
+  "skills.level": "%s %s",
+  "skills.points": "Points: %s",
+  "skills.cost": "Cost: %s",
+  "skills.toast.point": "+1 point",
+  "skills.not_served": "Skills is not on this server",
+  "skills.config.share_radius": "Share range",
+  "skills.config.share_fraction": "Friends' share",
+  "skills.config.toasts": "Level-up toasts"
+}
