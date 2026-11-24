@@ -44,6 +44,7 @@ Trees are data. Any data pack or mod can add a tree, add skills to an existing o
 
 - **Sources**: a statistic (`stat` type, and `of` an id, a `#tag` or `*`), worth `xp` per count; or a block broken (or placed, with `"on": "placed"`) whose state has every listed property.
 - **Skills**: a place on the grid (`at`, from the reading start), a cost, the skills they need, and perks on any attribute of the game or a mod.
+- **Tag perks**: `{ "tag": "mymod.comfort" }` gives the player that vanilla tag (`/tag`) while the skill is unlocked, so another mod can offer comforts with no code tie to Skills; its tooltip line is the translation `skills.perk.<tag>`.
 - **Add to a tree**: `{"extends": "skills:mining", "nodes": [...], "sources": [...]}`.
 - A skill with an unknown attribute or a missing `needs` is skipped and named in the log; the rest loads.
 

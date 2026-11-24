@@ -32,6 +32,10 @@ pub enum Operation {
 #[serde(untagged)]
 pub enum Perk {
     Attribute { attribute: String, amount: f64, operation: Operation },
+    /// A tag on the player (vanilla's `/tag`) while the node is unlocked: how another mod reads a
+    /// comfort it offers (`storage.find`), with no code tie to Skills. Its tooltip line is the
+    /// translation `skills.perk.<tag>`.
+    Tag { tag: String },
 }
 
 /// What a source matches: an id (`minecraft:stone`), a tag (`#minecraft:logs`) or anything (`*`).

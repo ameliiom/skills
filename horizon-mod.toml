@@ -1,6 +1,6 @@
 id = "skills"
 name = "Skills"
-version = "0.1.1"
+version = "0.2.0"
 description = "Earn skill experience by playing, share it with friends nearby, and unlock permanent perks in skill trees."
 authors = ["ameliiom"]
 license = "MIT"

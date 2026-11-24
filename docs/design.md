@@ -149,6 +149,6 @@ server". A client without Skills still plays; its player earns nothing.
 ## 11. Not in this version
 
 - Resetting a tree (respec).
-- Perks that are not attributes (bonus crop drops, auto-smelt): the perk format is a tagged list so
-  they add later as new kinds without changing files.
+- Perks with game effects of their own (bonus crop drops, auto-smelt). Since 0.2 a perk can be a
+  vanilla player tag (`{"tag": "storage.find"}`): another mod reads it and offers the comfort.
 - Experience for blocks a player placed and broke again (ores): counted as vanilla counts them.

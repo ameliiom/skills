@@ -146,7 +146,8 @@ fn check_attributes(host: &dyn Host, trees: Trees) -> Trees {
     let mut trees = trees;
     for t in &mut trees.0 {
         t.nodes.retain(|n| {
-            n.perks.iter().all(|tree::Perk::Attribute { attribute, .. }| {
+            n.perks.iter().all(|perk| {
+                let tree::Perk::Attribute { attribute, .. } = perk else { return true };
                 let known = host.registry_entry("minecraft:attribute", attribute).is_some();
                 if !known {
                     eprintln!("[skills] {}: node {}: unknown attribute {attribute}", t.id, n.id);
@@ -307,12 +308,19 @@ pub fn unlock(request: Unlock, cx: &mut dyn IPayloadContext) -> Result<(), Strin
     Ok(())
 }
 
-/// Makes the player's `skills:` modifiers exactly what their progress earns.
+/// Makes the player's `skills:` modifiers and perk tags exactly what their progress earns.
 fn reconcile(host: &mut dyn ServerHost, player: PlayerRef) {
-    let wanted = with(|s| {
+    let (wanted, (tags, known)) = with(|s| {
         let progress = s.players.get(&player.uuid()).cloned().unwrap_or_default();
-        perks::wanted(&s.trees, &progress)
+        (perks::wanted(&s.trees, &progress), perks::tags(&s.trees, &progress))
     });
+    let has: BTreeSet<String> = player.entity().tags(&*host).unwrap_or_default().into_iter().collect();
+    for tag in known.iter().filter(|t| !tags.contains(*t) && has.contains(*t)) {
+        player.entity().remove_tag(host, tag);
+    }
+    for tag in tags.iter().filter(|t| !has.contains(*t)) {
+        player.entity().add_tag(host, tag);
+    }
     let Some(living) = host.living(player.entity()) else { return };
     let stale: Vec<(String, Identifier)> = {
         let read: &dyn Host = &*host;

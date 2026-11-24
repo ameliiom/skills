@@ -215,7 +215,10 @@ fn perk_lines(host: &dyn ClientHost, node: &Node) -> Vec<Text> {
     node.perks
         .iter()
         .map(|perk| {
-            let Perk::Attribute { attribute, amount, operation } = perk;
+            let (attribute, amount, operation) = match perk {
+                Perk::Attribute { attribute, amount, operation } => (attribute, amount, operation),
+                Perk::Tag { tag } => return coloured(tr(host, &format!("skills.perk.{tag}"), tag), "blue"),
+            };
             let (key, shown, blue) = look::modifier_text(*amount, *operation);
             let (ns, path) = attribute.split_once(':').unwrap_or(("minecraft", attribute));
             let name_key = [format!("attribute.name.{path}"), format!("attribute.name.{ns}.{path}")]
