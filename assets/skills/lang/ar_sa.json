@@ -1,9 +1,8 @@
 {
   "key.skills.open": "المهارات",
-  "skills.level": "%s %s",
   "skills.points": "النقاط: %s",
   "skills.cost": "التكلفة: %s",
-  "skills.toast.point": "+1 نقطة",
+  "skills.toast.point": "+%s نقطة",
   "skills.not_served": "مود المهارات غير موجود في هذا السيرفر",
   "skills.config.share_radius": "مدى المشاركة",
   "skills.config.share_fraction": "حصة الأصدقاء",
@@ -55,5 +54,13 @@
   "skills.node.building.crouch_2": "انحناء سريع 2",
   "skills.node.building.hands": "أيدي طويلة",
   "skills.node.building.safe": "سقالة آمنة",
-  "skills.tree.building": "البناء"
+  "skills.tree.building": "البناء",
+  "skills.empty": "لا توجد أشجار مهارات",
+  "skills.state.unlocked": "مفتوحة",
+  "skills.state.open": "اضغط للفتح",
+  "skills.state.points": "النقاط لا تكفي",
+  "skills.state.locked": "افتح المهارة التي قبلها أولاً",
+  "skills.toast.title": "%1$s مستوى %2$s",
+  "skills.pack.defaults": "المهارات: الأشجار الأساسية",
+  "skills.toast.points": "+%s نقاط"
 }

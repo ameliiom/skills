@@ -8,7 +8,8 @@ pub type Rect = [f32; 4];
 pub const BORDER: [f32; 4] = [9.0, 18.0, 9.0, 9.0]; // start, top, end, bottom of the window frame
 pub const TAB: [f32; 2] = [28.0, 32.0];
 pub const FRAME: f32 = 26.0;
-pub const CELL: [f32; 2] = [28.0, 27.0];
+/// A grid cell: a frame and the gap its links show in (vanilla packs its denser trees at 28 × 27).
+pub const CELL: [f32; 2] = [44.0, 36.0];
 /// The gap kept around the window, so the world shows at the screen's edge.
 pub const MARGIN: f32 = 16.0;
 
@@ -17,13 +18,12 @@ pub const MARGIN: f32 = 16.0;
 pub mod sprite {
     pub const FRAME_UNLOCKED: &str = "advancements/task_frame_obtained";
     pub const FRAME: &str = "advancements/task_frame_unobtained";
-    /// The hover title boxes (nine-slice, 200×26, border 10).
-    pub const BOX_UNLOCKED: &str = "advancements/box_obtained";
-    pub const BOX: &str = "advancements/box_unobtained";
     pub const XP_BACK: &str = "hud/experience_bar_background";
     pub const XP_FILL: &str = "hud/experience_bar_progress";
     /// The window frame is a plain texture (252×140), drawn nine-slice by its 9/18/9/9 border.
-    pub const WINDOW: &str = "minecraft:textures/gui/advancements/window.png";
+    pub const WINDOW: &str = "gui/advancements/window";
+    /// The advancement toast's frame.
+    pub const TOAST: &str = "toast/advancement";
 
     /// The tab sprite as vanilla picks it: the first tab of the row sits on the window's corner
     /// (`left`, or `right` in Arabic, where the row starts at the right), the rest `middle`.
@@ -95,6 +95,81 @@ pub fn link(parent: Rect, child: Rect) -> [[f32; 2]; 3] {
     [a, elbow, [elbow[0], b[1]]]
 }
 
+/// Whether `point` is inside `rect`.
+pub fn contains([x, y, w, h]: Rect, [px, py]: [f32; 2]) -> bool {
+    px >= x && px < x + w && py >= y && py < y + h
+}
+
+/// The lowest and highest grid cells of a tree (`[[0, 0], [0, 0]]` for none).
+pub fn bounds(cells: impl Iterator<Item = [i32; 2]>) -> [[i32; 2]; 2] {
+    cells
+        .fold(None, |acc: Option<[[i32; 2]; 2]>, c| {
+            Some(match acc {
+                None => [c, c],
+                Some([lo, hi]) => [[lo[0].min(c[0]), lo[1].min(c[1])], [hi[0].max(c[0]), hi[1].max(c[1])]],
+            })
+        })
+        .unwrap_or([[0, 0], [0, 0]])
+}
+
+/// How vanilla's attribute tooltip says a modifier: its translation key, the amount as shown
+/// (a percentage for the multiplying operations) and whether it reads as a gain (blue) or a loss.
+pub fn modifier_text(amount: f64, operation: crate::tree::Operation) -> (String, String, bool) {
+    use crate::tree::Operation;
+    let (n, shown) = match operation {
+        Operation::AddValue => (0, amount),
+        Operation::AddMultipliedBase => (1, amount * 100.0),
+        Operation::AddMultipliedTotal => (2, amount * 100.0),
+    };
+    let sign = if amount >= 0.0 { "plus" } else { "take" };
+    let value = format!("{:.2}", shown.abs());
+    let value = value.trim_end_matches('0').trim_end_matches('.').to_owned();
+    (format!("attribute.modifier.{sign}.{n}"), value, amount >= 0.0)
+}
+
+/// The window's title row: where the tree's name may go, and the text's top.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Header {
+    pub title_start: f32,
+    pub title_end: f32,
+    pub y: f32,
+}
+
+/// Vanilla draws the window title at (8, 6) inside the frame.
+pub fn header([x, y, w, _]: Rect, _rtl: bool) -> Header {
+    Header { title_start: x + 8.0, title_end: x + w - 8.0, y: y + 6.0 }
+}
+
+/// Where the level number, the experience bar and the points go at the title row's end.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct HeaderEnd {
+    pub level: [f32; 2],
+    pub bar: Rect,
+    pub points: [f32; 2],
+}
+
+/// The experience bar's length in the header: the HUD's own 182, never scaled.
+pub const BAR: f32 = 182.0;
+
+/// Laid out from the end of the row: points, the bar, the level number (Arabic mirrors it).
+pub fn header_end(h: Header, level_w: f32, points_w: f32, rtl: bool) -> HeaderEnd {
+    // In reading order from the row's end inwards, at LTR coordinates measured from the end.
+    let points_x = points_w;
+    let bar_x = points_x + 8.0 + BAR;
+    let level_x = bar_x + 4.0 + level_w;
+    let at = |from_end: f32, width: f32| if rtl { h.title_start + from_end - width } else { h.title_end - from_end };
+    HeaderEnd {
+        level: [at(level_x, level_w), h.y],
+        bar: [at(bar_x, BAR), h.y + 1.5, BAR, 5.0],
+        points: [at(points_x, points_w), h.y],
+    }
+}
+
+/// How far a toast has slid in (0 hidden, 1 fully shown) at `age` ticks of `life`.
+pub fn toast_slide(age: f32, life: f32, slide: f32) -> f32 {
+    (age / slide).min((life - age) / slide).clamp(0.0, 1.0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -130,6 +205,41 @@ mod tests {
         let left = first[0] - i[0];
         let right = i[0] + i[2] - (last[0] + last[2]);
         assert!((left - right).abs() < 0.01);
+    }
+
+    #[test]
+    fn modifiers_read_as_vanilla_says_them() {
+        use crate::tree::Operation;
+        assert_eq!(modifier_text(0.5, Operation::AddValue), ("attribute.modifier.plus.0".into(), "0.5".into(), true));
+        assert_eq!(modifier_text(0.1, Operation::AddMultipliedBase), ("attribute.modifier.plus.1".into(), "10".into(), true));
+        assert_eq!(modifier_text(-0.25, Operation::AddValue), ("attribute.modifier.take.0".into(), "0.25".into(), false));
+        assert_eq!(modifier_text(2.0, Operation::AddValue).1, "2");
+    }
+
+    #[test]
+    fn the_header_end_mirrors_and_never_meets_the_title() {
+        let w = window(SCREEN);
+        for rtl in [false, true] {
+            let h = header(w, rtl);
+            let e = header_end(h, 12.0, 40.0, rtl);
+            let lo = e.level[0].min(e.points[0]).min(e.bar[0]);
+            let hi = (e.level[0] + 12.0).max(e.points[0] + 40.0).max(e.bar[0] + BAR);
+            assert!(lo >= h.title_start && hi <= h.title_end);
+            // No overlap between the three.
+            let spans = [(e.level[0], 12.0), (e.bar[0], BAR), (e.points[0], 40.0)];
+            for (i, a) in spans.iter().enumerate() {
+                for b in &spans[i + 1..] {
+                    assert!(a.0 + a.1 <= b.0 || b.0 + b.1 <= a.0, "{a:?} {b:?}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn toasts_slide_in_and_out() {
+        assert_eq!(toast_slide(0.0, 100.0, 6.0), 0.0);
+        assert_eq!(toast_slide(50.0, 100.0, 6.0), 1.0);
+        assert_eq!(toast_slide(100.0, 100.0, 6.0), 0.0);
     }
 
     #[test]

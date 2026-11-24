@@ -74,7 +74,7 @@ Built in the advancements screen's own look, from the game's sprites:
 ## 6. Toast
 
 On a new level: a toast in the advancement toast's frame, the tree's icon, "Mining 5", "+1 point".
-Drawn by Skills in a HUD layer at the game's toast corner, stacked under the game's own toasts. No
+Drawn by Skills at the game's toast corner (top right in every language, as vanilla's own toasts, over whatever is there for its 5 seconds); Arabic mirrors its inside. Several stack downward. No
 chat line.
 
 ## 7. Data format
@@ -110,7 +110,9 @@ chat line.
 
 ## 8. Default trees
 
-Five trees, their balance adapted from Default Skill Trees (CC0):
+Five trees in an always-on data pack bundled in the mod (`assets/skills/packs/defaults`, registered
+with `add_pack_finders` at the bottom of the pack order, hidden), so any world or mod pack overrides or
+extends them. Their balance follows the idea of Default Skill Trees (CC0):
 
 | Tree | Earns from | Perks |
 |---|---|---|
@@ -129,6 +131,10 @@ Each tree: 10–14 nodes in two or three branches, 30–40 levels to fill.
 | `skills:trees` | server → client | on join and after every data reload: the loaded trees (layout, icons, titles, perks, curve) |
 | `skills:progress` | server → client | on join and on every change: that player's experience and unlocked nodes per tree |
 | `skills:unlock` | client → server | a click on an open node; the server checks and answers with `skills:progress` |
+
+A payload string holds 4096 bytes, so the JSON travels as a list of parts. Trees and progress are
+sent from the server tick, retried until the client takes them (a join's first moments can't carry
+payloads), and perks are reconciled on the tick after a join or respawn for the same reason.
 
 Optional payloads: on a server without Skills the key shows an empty window with "Skills is not on this
 server". A client without Skills still plays; its player earns nothing.

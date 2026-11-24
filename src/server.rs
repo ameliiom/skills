@@ -14,7 +14,10 @@ use mod_api::{
 };
 #[allow(unused_imports)]
 use mod_api::prelude::*;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
+
+/// Ticks a player's trees are retried for (10 seconds).
+const RETRIES: u32 = 200;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
@@ -26,6 +29,13 @@ struct State {
     players: HashMap<u128, Progress>,
     /// Players whose progress changed since it was last sent.
     dirty: BTreeSet<u128>,
+    /// Players who still need the trees (just joined, or a reload changed them): retried each
+    /// tick until the client takes them, as a join's first ticks can't carry payloads yet; a
+    /// client without Skills never takes them, so each gets `RETRIES` ticks.
+    unsynced: BTreeMap<u128, u32>,
+    /// Players whose perks are reconciled on the next tick: a join or respawn hook runs before
+    /// the new player entity takes modifiers.
+    unsettled: BTreeSet<u128>,
     /// The world's `players/data`, from the first load or save.
     directory: Option<PathBuf>,
 }
@@ -95,15 +105,38 @@ pub fn tick(host: &mut dyn ServerHost) {
         let trees = check_attributes(&*host, trees);
         with(|s| s.trees = trees);
         for player in host.players().server_players() {
-            send_trees(host, player);
-            reconcile(host, player);
-            with(|s| s.dirty.insert(player.uuid()));
+            with(|s| {
+                s.unsynced.insert(player.uuid(), 0);
+                s.unsettled.insert(player.uuid());
+            });
         }
+    }
+    let unsettled = with(|s| std::mem::take(&mut s.unsettled));
+    for uuid in unsettled {
+        if let Some(player) = host.player(uuid) {
+            reconcile(host, player);
+        }
+    }
+    let unsynced: Vec<u128> = with(|s| s.unsynced.keys().copied().collect());
+    for uuid in unsynced {
+        let sent = host.player(uuid).map(|player| send_trees(host, player));
+        with(|s| {
+            let tries = s.unsynced.entry(uuid).or_default();
+            *tries += 1;
+            if sent != Some(false) || *tries >= RETRIES {
+                s.unsynced.remove(&uuid);
+            }
+            if sent == Some(true) {
+                s.dirty.insert(uuid);
+            }
+        });
     }
     let dirty = with(|s| std::mem::take(&mut s.dirty));
     for uuid in dirty {
-        if let Some(player) = host.player(uuid) {
-            send_progress(host, player);
+        if let Some(player) = host.player(uuid)
+            && !send_progress(host, player)
+        {
+            with(|s| s.dirty.insert(uuid));
         }
     }
 }
@@ -150,30 +183,30 @@ fn uuid_text(uuid: u128) -> String {
     format!("{}-{}-{}-{}-{}", &h[0..8], &h[8..12], &h[12..16], &h[16..20], &h[20..32])
 }
 
-pub fn joined(host: &mut dyn ServerHost, uuid: u128) {
-    let Some(player) = host.player(uuid) else { return };
-    send_trees(host, player);
-    reconcile(host, player);
-    with(|s| s.dirty.insert(uuid));
+pub fn joined(uuid: u128) {
+    with(|s| {
+        s.unsynced.insert(uuid, 0);
+        s.unsettled.insert(uuid);
+    });
 }
 
-pub fn respawned(host: &mut dyn ServerHost, uuid: u128) {
-    if let Some(player) = host.player(uuid) {
-        reconcile(host, player);
-    }
+pub fn respawned(uuid: u128) {
+    with(|s| s.unsettled.insert(uuid));
 }
 
-fn send_trees(host: &mut dyn ServerHost, player: PlayerRef) {
-    let Some(token) = payloads::TREES.get() else { return };
-    let json = with(|s| serde_json::to_string(&s.trees).unwrap_or_default());
-    let _ = token.send(host, player, &TreesSync { json });
+/// Whether the client took the trees.
+fn send_trees(host: &mut dyn ServerHost, player: PlayerRef) -> bool {
+    let Some(token) = payloads::TREES.get() else { return true };
+    let json = with(|s| payloads::Json::of(&s.trees));
+    let sent = token.send(host, player, &TreesSync { json });
+    sent.is_ok()
 }
 
-fn send_progress(host: &mut dyn ServerHost, player: PlayerRef) {
-    let Some(token) = payloads::PROGRESS.get() else { return };
-    let json = with(|s| serde_json::to_string(&s.players.get(&player.uuid()).cloned().unwrap_or_default()))
-        .unwrap_or_default();
-    let _ = token.send(host, player, &ProgressSync { json });
+/// Whether the client took its progress.
+fn send_progress(host: &mut dyn ServerHost, player: PlayerRef) -> bool {
+    let Some(token) = payloads::PROGRESS.get() else { return true };
+    let json = with(|s| payloads::Json::of(&s.players.get(&player.uuid()).cloned().unwrap_or_default()));
+    token.send(host, player, &ProgressSync { json }).is_ok()
 }
 
 // ---- Earning ----

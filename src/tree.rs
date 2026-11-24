@@ -348,7 +348,7 @@ mod tests {
 mod shipped {
     #[test]
     fn default_trees_load_without_problems() {
-        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("data/skills/skills");
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/skills/packs/defaults/data/skills/skills");
         let files: Vec<(String, Vec<u8>)> = std::fs::read_dir(&dir)
             .unwrap()
             .map(|e| e.unwrap().path())
@@ -358,9 +358,9 @@ mod shipped {
         assert!(problems.is_empty(), "{problems:?}");
         assert_eq!(trees.0.len(), 5);
         let en: serde_json::Value =
-            serde_json::from_slice(&std::fs::read(dir.join("../../../assets/skills/lang/en_us.json")).unwrap()).unwrap();
+            serde_json::from_slice(&std::fs::read(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/skills/lang/en_us.json")).unwrap()).unwrap();
         let ar: serde_json::Value =
-            serde_json::from_slice(&std::fs::read(dir.join("../../../assets/skills/lang/ar_sa.json")).unwrap()).unwrap();
+            serde_json::from_slice(&std::fs::read(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/skills/lang/ar_sa.json")).unwrap()).unwrap();
         for t in &trees.0 {
             assert!((8..=40).contains(&t.total_cost()), "{} costs {}", t.id, t.total_cost());
             let keys = std::iter::once(t.title.clone()).chain(t.nodes.iter().filter_map(|n| n.title.clone()));

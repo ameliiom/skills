@@ -1,9 +1,8 @@
 {
   "key.skills.open": "Skills",
-  "skills.level": "%s %s",
   "skills.points": "Points: %s",
   "skills.cost": "Cost: %s",
-  "skills.toast.point": "+1 point",
+  "skills.toast.point": "+%s point",
   "skills.not_served": "Skills is not on this server",
   "skills.config.share_radius": "Share range",
   "skills.config.share_fraction": "Friends' share",
@@ -55,5 +54,13 @@
   "skills.node.building.crouch_2": "Quick Crouch II",
   "skills.node.building.hands": "Long Hands",
   "skills.node.building.safe": "Safe Scaffold",
-  "skills.tree.building": "Building"
+  "skills.tree.building": "Building",
+  "skills.empty": "No skill trees are loaded",
+  "skills.state.unlocked": "Unlocked",
+  "skills.state.open": "Click to unlock",
+  "skills.state.points": "Not enough points",
+  "skills.state.locked": "Needs the skill before it",
+  "skills.toast.title": "%1$s level %2$s",
+  "skills.pack.defaults": "Skills: default trees",
+  "skills.toast.points": "+%s points"
 }

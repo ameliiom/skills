@@ -1,7 +1,7 @@
 {
   "title": "skills.tree.exploration",
   "icon": "minecraft:compass",
-  "background": "minecraft:block/grass_block_top",
+  "background": "minecraft:block/moss_block",
   "order": 4,
   "curve": {
     "base": 20,

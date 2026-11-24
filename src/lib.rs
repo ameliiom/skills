@@ -8,7 +8,9 @@
 //!   into tree experience; friends nearby earn a share.
 //! - **Perks** (`perks.rs`): attribute modifiers derived from progress, reconciled on the player.
 //! - **Screen and toast** (`look.rs`; drawing in the build stage): the advancements screen's look.
+mod client;
 mod look;
+mod rtl;
 mod server;
 pub mod payloads;
 pub mod perks;
@@ -19,11 +21,14 @@ mod store;
 pub mod tree;
 
 use mod_api::{
-    AddServerReloadListenersEvent, ClientHost, EntityPlaceEvent, ClientTickPreEvent, Flow, GuiLayer,
+    AddPackFindersEvent, AddServerReloadListenersEvent, ClientHost, EntityPlaceEvent, HostSide,
+    Identifier, PackPosition, PackRegistration, PackType, Text, ClientTickPreEvent, Flow, GuiLayer,
     GuiLayerDrawEvent, GuiLayerPlacement, Hooks, Host, IPayloadContext, KeyRegistration,
     PayloadId, PlayerDestroyedBlockEvent, PlayerLoadFromFileEvent, PlayerLoggedInEvent,
     PlayerRespawnedEvent, PlayerSaveToFileEvent, PlayerStatAwardEvent, RegisterGuiLayersEvent,
-    Registrar, RegistrationContext, ServerHost, ServerTickEvent, ServerTickPhase, SettingSpec,
+    Registrar, RegistrationContext, ScreenMouseButtonPressedPreEvent, ScreenMouseDraggedPreEvent,
+    ScreenRenderPostEvent, ServerHost, ServerTickEvent, ServerTickPhase, SettingSpec,
+    ClientPlayerLoggingOutEvent,
 };
 #[allow(unused_imports)]
 use mod_api::prelude::*;
@@ -48,6 +53,8 @@ pub(crate) struct Seen {
     pub progress: progress::Progress,
     /// Whether the server has Skills (it sent trees).
     pub served: bool,
+    /// Whether progress has arrived since joining.
+    pub received: bool,
 }
 
 pub(crate) static SEEN: Mutex<Option<Seen>> = Mutex::new(None);
@@ -58,7 +65,7 @@ pub(crate) fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
 
 /// Client: the server's trees arrived.
 fn on_trees(sync: payloads::TreesSync, _: &mut dyn IPayloadContext) -> Result<(), String> {
-    let trees = serde_json::from_str(&sync.json).map_err(|e| e.to_string())?;
+    let trees = sync.json.read()?;
     let mut seen = lock(&SEEN);
     let seen = seen.get_or_insert_with(Seen::default);
     seen.trees = trees;
@@ -68,8 +75,15 @@ fn on_trees(sync: payloads::TreesSync, _: &mut dyn IPayloadContext) -> Result<()
 
 /// Client: this player's progress arrived (build stage: a level gained queues a toast).
 fn on_progress(sync: payloads::ProgressSync, _: &mut dyn IPayloadContext) -> Result<(), String> {
-    let progress = serde_json::from_str(&sync.json).map_err(|e| e.to_string())?;
-    lock(&SEEN).get_or_insert_with(Seen::default).progress = progress;
+    let progress: progress::Progress = sync.json.read()?;
+    let mut seen = lock(&SEEN);
+    let seen = seen.get_or_insert_with(Seen::default);
+    // The first progress after joining shows where you are; only later ones are level-ups.
+    if seen.received {
+        client::progressed(&seen.trees, &seen.progress, &progress);
+    }
+    seen.progress = progress;
+    seen.received = true;
     Ok(())
 }
 
@@ -106,12 +120,45 @@ impl Hooks for Mod {
     /// Client: K opens the screen (build stage: `mod_screen_open`, drawn in `screen_render_post`).
     fn client_tick_pre(&self, host: &mut dyn ClientHost, _: &mut ClientTickPreEvent) {
         while host.consume_click(MOD_ID, SCREEN_KEY) {
-            let _ = host.mod_screen_open(MOD_ID);
+            client::open(host);
+        }
+        client::tick(host);
+    }
+
+    fn client_player_logging_out(&self, _: &mut dyn ClientHost, _: &mut ClientPlayerLoggingOutEvent) {
+        *lock(&SEEN) = None;
+    }
+
+    fn gui_layer_draw(&self, host: &dyn ClientHost, event: &mut GuiLayerDrawEvent<'_>) {
+        if event.layer == LAYER {
+            client::draw_toasts(host, event.draw);
         }
     }
 
-    /// Client: the level-up toast (build stage).
-    fn gui_layer_draw(&self, _host: &dyn ClientHost, _event: &mut GuiLayerDrawEvent<'_>) {}
+    fn screen_render_post(&self, host: &dyn ClientHost, event: &mut ScreenRenderPostEvent<'_>) {
+        client::draw_screen(host, event.draw, event.screen.mouse);
+    }
+
+    fn screen_mouse_button_pressed_pre(&self, host: &dyn ClientHost, event: &mut ScreenMouseButtonPressedPreEvent<'_>) -> Flow {
+        if client::press(host, event.button, event.screen.mouse) { Flow::Cancel } else { Flow::Continue }
+    }
+
+    fn screen_mouse_dragged_pre(&self, host: &dyn ClientHost, event: &mut ScreenMouseDraggedPreEvent<'_>) -> Flow {
+        if client::drag(host, event.button, event.delta) { Flow::Cancel } else { Flow::Continue }
+    }
+
+    /// The default trees, as an always-on data pack bundled in the mod, below every other pack so a
+    /// world's or another mod's pack overrides or extends them.
+    fn add_pack_finders(&self, _: HostSide, event: &mut AddPackFindersEvent<'_>) {
+        let Ok(location) = Identifier::parse("skills:assets/skills/packs/defaults") else { return };
+        let mut pack = PackRegistration::new(location, PackType::ServerData, Text::translate("skills.pack.defaults", vec![]));
+        pack.always_active = true;
+        pack.position = PackPosition::Bottom;
+        pack.hidden = true;
+        if let Err(e) = event.packs.add_pack_finders(pack) {
+            eprintln!("[skills] default trees pack: {e:?}");
+        }
+    }
 
     fn add_server_reload_listeners(&self, _: &dyn Host, event: &mut AddServerReloadListenersEvent<'_>) {
         server::add_listener(event.listeners);
@@ -131,12 +178,12 @@ impl Hooks for Mod {
         server::save(event.player, event.directory);
     }
 
-    fn player_logged_in(&self, host: &mut dyn ServerHost, event: &mut PlayerLoggedInEvent<'_>) {
-        server::joined(host, event.player);
+    fn player_logged_in(&self, _: &mut dyn ServerHost, event: &mut PlayerLoggedInEvent<'_>) {
+        server::joined(event.player);
     }
 
-    fn player_respawned(&self, host: &mut dyn ServerHost, event: &mut PlayerRespawnedEvent<'_>) {
-        server::respawned(host, event.player);
+    fn player_respawned(&self, _: &mut dyn ServerHost, event: &mut PlayerRespawnedEvent<'_>) {
+        server::respawned(event.player);
     }
 
     fn player_stat_award(&self, host: &mut dyn ServerHost, event: &mut PlayerStatAwardEvent<'_>) -> Flow {
