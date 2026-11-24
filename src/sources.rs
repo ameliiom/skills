@@ -1,13 +1,13 @@
 //! Turns what a player did into tree experience, through the sources the trees declare.
-use crate::tree::{Of, Source, Trees};
-use std::collections::BTreeMap;
+use crate::tree::{BlockEvent, Of, Source, Trees};
 
 /// What happened, as the hooks tell it.
 pub enum Action<'a> {
     /// `player_stat_award`: a statistic type, its entry and the amount.
     Stat { stat: &'a str, of: &'a str, amount: f64 },
-    /// `player_destroyed_block`: the block and its state's property values.
-    Block { block: &'a str, state: &'a BTreeMap<String, String> },
+    /// `player_destroyed_block` or `entity_place`: the block, and a lookup of its state's
+    /// property values.
+    Block { on: BlockEvent, block: &'a str, state: &'a dyn Fn(&str) -> Option<String> },
 }
 
 /// Answers whether an id is in a tag (`has_tag("minecraft:stone", "minecraft:mineable/pickaxe")`).
@@ -21,6 +21,7 @@ fn matches(of: &Of, id: &str, tags: &dyn Tags) -> bool {
     match of {
         Of::Id(want) => want == id,
         Of::Tag(tag) => tags.has(id, tag),
+        Of::Any => true,
     }
 }
 
@@ -38,8 +39,8 @@ pub fn gains(trees: &Trees, action: &Action<'_>, tags: &dyn Tags) -> Vec<(String
                 {
                     xp * amount
                 }
-                (Source::Block { block, state, xp }, Action::Block { block: b, state: st })
-                    if matches(block, b, tags) && state.iter().all(|(k, v)| st.get(k) == Some(v)) =>
+                (Source::Block { block, on, state, xp }, Action::Block { on: o, block: b, state: st })
+                    if on == o && matches(block, b, tags) && state.iter().all(|(k, v)| st(k).as_ref() == Some(v)) =>
                 {
                     *xp
                 }
@@ -57,6 +58,7 @@ pub fn gains(trees: &Trees, action: &Action<'_>, tags: &dyn Tags) -> Vec<(String
 mod tests {
     use super::*;
     use crate::tree::load;
+    use std::collections::BTreeMap;
 
     struct Ores;
     impl Tags for Ores {
@@ -90,7 +92,8 @@ mod tests {
         let t = trees();
         let at = |age: &str| {
             let state = BTreeMap::from([("age".to_string(), age.to_string())]);
-            gains(&t, &Action::Block { block: "minecraft:wheat", state: &state }, &Ores)
+            let prop = |k: &str| state.get(k).cloned();
+            gains(&t, &Action::Block { on: BlockEvent::Broken, block: "minecraft:wheat", state: &prop }, &Ores)
         };
         assert!(at("3").is_empty());
         assert_eq!(at("7"), [("skills:t".to_string(), 2.0)]);

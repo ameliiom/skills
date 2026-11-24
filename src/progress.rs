@@ -150,6 +150,7 @@ mod tests {
     fn tree() -> Tree {
         let node = |id: &str, cost, needs: &[&str]| Node {
             id: id.into(),
+            title: None,
             icon: "minecraft:stone".into(),
             at: [0, 0],
             cost,

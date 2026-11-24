@@ -1,0 +1,186 @@
+{
+  "title": "skills.tree.farming",
+  "icon": "minecraft:iron_hoe",
+  "background": "minecraft:block/farmland_moist",
+  "order": 3,
+  "curve": {
+    "base": 20,
+    "step": 10
+  },
+  "sources": [
+    {
+      "block": "#minecraft:crops",
+      "state": {
+        "age": "7"
+      },
+      "xp": 2
+    },
+    {
+      "block": "minecraft:beetroots",
+      "state": {
+        "age": "3"
+      },
+      "xp": 2
+    },
+    {
+      "block": "minecraft:nether_wart",
+      "state": {
+        "age": "3"
+      },
+      "xp": 2
+    },
+    {
+      "stat": "minecraft:mined",
+      "of": "minecraft:melon",
+      "xp": 2
+    },
+    {
+      "stat": "minecraft:mined",
+      "of": "minecraft:pumpkin",
+      "xp": 2
+    },
+    {
+      "stat": "minecraft:custom",
+      "of": "minecraft:animals_bred",
+      "xp": 5
+    },
+    {
+      "stat": "minecraft:custom",
+      "of": "minecraft:fish_caught",
+      "xp": 6
+    }
+  ],
+  "nodes": [
+    {
+      "id": "hearty_1",
+      "title": "skills.node.farming.hearty_1",
+      "icon": "minecraft:bread",
+      "at": [
+        0,
+        0
+      ],
+      "cost": 1,
+      "perks": [
+        {
+          "attribute": "minecraft:max_health",
+          "amount": 2,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "hearty_2",
+      "title": "skills.node.farming.hearty_2",
+      "icon": "minecraft:cake",
+      "at": [
+        1,
+        0
+      ],
+      "cost": 2,
+      "needs": [
+        "hearty_1"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:max_health",
+          "amount": 2,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "hearty_3",
+      "title": "skills.node.farming.hearty_3",
+      "icon": "minecraft:golden_carrot",
+      "at": [
+        2,
+        0
+      ],
+      "cost": 3,
+      "needs": [
+        "hearty_2"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:max_health",
+          "amount": 4,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "fortune_1",
+      "title": "skills.node.farming.fortune_1",
+      "icon": "minecraft:fishing_rod",
+      "at": [
+        0,
+        1
+      ],
+      "cost": 1,
+      "perks": [
+        {
+          "attribute": "minecraft:luck",
+          "amount": 0.5,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "fortune_2",
+      "title": "skills.node.farming.fortune_2",
+      "icon": "minecraft:nautilus_shell",
+      "at": [
+        1,
+        1
+      ],
+      "cost": 2,
+      "needs": [
+        "fortune_1"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:luck",
+          "amount": 1,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "fortune_3",
+      "title": "skills.node.farming.fortune_3",
+      "icon": "minecraft:heart_of_the_sea",
+      "at": [
+        2,
+        1
+      ],
+      "cost": 3,
+      "needs": [
+        "fortune_2"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:luck",
+          "amount": 1.5,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "herder",
+      "title": "skills.node.farming.herder",
+      "icon": "minecraft:lead",
+      "at": [
+        0,
+        2
+      ],
+      "cost": 1,
+      "perks": [
+        {
+          "attribute": "minecraft:entity_interaction_range",
+          "amount": 0.5,
+          "operation": "add_value"
+        }
+      ]
+    }
+  ]
+}

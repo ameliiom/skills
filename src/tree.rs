@@ -34,18 +34,20 @@ pub enum Perk {
     Attribute { attribute: String, amount: f64, operation: Operation },
 }
 
-/// What a source matches: an id (`minecraft:stone`) or a tag (`#c:ores`).
+/// What a source matches: an id (`minecraft:stone`), a tag (`#minecraft:logs`) or anything (`*`).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(from = "String", into = "String")]
 pub enum Of {
     Id(String),
     Tag(String),
+    Any,
 }
 
 impl From<String> for Of {
     fn from(s: String) -> Self {
         match s.strip_prefix('#') {
             Some(tag) => Of::Tag(tag.into()),
+            None if s == "*" => Of::Any,
             None => Of::Id(s),
         }
     }
@@ -56,8 +58,18 @@ impl From<Of> for String {
         match of {
             Of::Id(id) => id,
             Of::Tag(tag) => format!("#{tag}"),
+            Of::Any => "*".into(),
         }
     }
+}
+
+/// Which block event a block source hears.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BlockEvent {
+    #[default]
+    Broken,
+    Placed,
 }
 
 /// An action that earns a tree experience.
@@ -67,9 +79,12 @@ pub enum Source {
     /// A statistic award: `stat` is its type (`minecraft:mined`), `of` its entry. Each award
     /// earns `xp` times its amount (`walk_one_cm` counts centimetres, so its `xp` is small).
     Stat { stat: String, of: Of, xp: f64 },
-    /// A block a player broke, only when its state has every listed property value.
+    /// A block a player broke (or placed, with `"on": "placed"`), only when its state has every
+    /// listed property value.
     Block {
         block: Of,
+        #[serde(default)]
+        on: BlockEvent,
         #[serde(default)]
         state: BTreeMap<String, String>,
         xp: f64,
@@ -81,6 +96,9 @@ pub enum Source {
 pub struct Node {
     /// Unique in its tree (`haste_1`).
     pub id: String,
+    /// A translation key for its name; the id shows when it has none.
+    #[serde(default)]
+    pub title: Option<String>,
     /// The item drawn in its frame.
     pub icon: String,
     /// Its cell on the tree's grid, `[column, row]`, from the reading start.
@@ -322,5 +340,33 @@ mod tests {
         );
         assert!(trees.0.is_empty());
         assert_eq!(problems.len(), 2);
+    }
+}
+
+/// The trees this mod ships load cleanly: every file parses, every node is kept.
+#[cfg(test)]
+mod shipped {
+    #[test]
+    fn default_trees_load_without_problems() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("data/skills/skills");
+        let files: Vec<(String, Vec<u8>)> = std::fs::read_dir(&dir)
+            .unwrap()
+            .map(|e| e.unwrap().path())
+            .map(|p| (format!("skills:{}", p.file_stem().unwrap().to_string_lossy()), std::fs::read(&p).unwrap()))
+            .collect();
+        let (trees, problems) = super::load(files.iter().map(|(i, b)| (i.clone(), b.as_slice())), |_| true);
+        assert!(problems.is_empty(), "{problems:?}");
+        assert_eq!(trees.0.len(), 5);
+        let en: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(dir.join("../../../assets/skills/lang/en_us.json")).unwrap()).unwrap();
+        let ar: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(dir.join("../../../assets/skills/lang/ar_sa.json")).unwrap()).unwrap();
+        for t in &trees.0 {
+            assert!((8..=40).contains(&t.total_cost()), "{} costs {}", t.id, t.total_cost());
+            let keys = std::iter::once(t.title.clone()).chain(t.nodes.iter().filter_map(|n| n.title.clone()));
+            for key in keys {
+                assert!(en.get(&key).is_some() && ar.get(&key).is_some(), "untranslated {key}");
+            }
+        }
     }
 }

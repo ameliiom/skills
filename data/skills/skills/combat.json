@@ -1,0 +1,232 @@
+{
+  "title": "skills.tree.combat",
+  "icon": "minecraft:iron_sword",
+  "background": "minecraft:block/polished_blackstone_bricks",
+  "order": 1,
+  "curve": {
+    "base": 20,
+    "step": 10
+  },
+  "sources": [
+    {
+      "stat": "minecraft:killed",
+      "of": "*",
+      "xp": 3
+    },
+    {
+      "stat": "minecraft:custom",
+      "of": "minecraft:damage_dealt",
+      "xp": 0.02
+    }
+  ],
+  "nodes": [
+    {
+      "id": "strength_1",
+      "title": "skills.node.combat.strength_1",
+      "icon": "minecraft:stone_sword",
+      "at": [
+        0,
+        0
+      ],
+      "cost": 1,
+      "perks": [
+        {
+          "attribute": "minecraft:attack_damage",
+          "amount": 0.5,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "strength_2",
+      "title": "skills.node.combat.strength_2",
+      "icon": "minecraft:iron_sword",
+      "at": [
+        1,
+        0
+      ],
+      "cost": 2,
+      "needs": [
+        "strength_1"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:attack_damage",
+          "amount": 1,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "strength_3",
+      "title": "skills.node.combat.strength_3",
+      "icon": "minecraft:diamond_sword",
+      "at": [
+        2,
+        0
+      ],
+      "cost": 3,
+      "needs": [
+        "strength_2"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:attack_damage",
+          "amount": 1.5,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "vitality_1",
+      "title": "skills.node.combat.vitality_1",
+      "icon": "minecraft:apple",
+      "at": [
+        0,
+        1
+      ],
+      "cost": 1,
+      "perks": [
+        {
+          "attribute": "minecraft:max_health",
+          "amount": 2,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "vitality_2",
+      "title": "skills.node.combat.vitality_2",
+      "icon": "minecraft:golden_apple",
+      "at": [
+        1,
+        1
+      ],
+      "cost": 2,
+      "needs": [
+        "vitality_1"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:max_health",
+          "amount": 2,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "vitality_3",
+      "title": "skills.node.combat.vitality_3",
+      "icon": "minecraft:enchanted_golden_apple",
+      "at": [
+        2,
+        1
+      ],
+      "cost": 3,
+      "needs": [
+        "vitality_2"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:max_health",
+          "amount": 4,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "swift_blows",
+      "title": "skills.node.combat.swift_blows",
+      "icon": "minecraft:feather",
+      "at": [
+        0,
+        2
+      ],
+      "cost": 1,
+      "perks": [
+        {
+          "attribute": "minecraft:attack_speed",
+          "amount": 0.05,
+          "operation": "add_multiplied_base"
+        }
+      ]
+    },
+    {
+      "id": "steady",
+      "title": "skills.node.combat.steady",
+      "icon": "minecraft:anvil",
+      "at": [
+        1,
+        2
+      ],
+      "cost": 2,
+      "needs": [
+        "swift_blows"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:knockback_resistance",
+          "amount": 0.1,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "sweep",
+      "title": "skills.node.combat.sweep",
+      "icon": "minecraft:netherite_sword",
+      "at": [
+        2,
+        2
+      ],
+      "cost": 2,
+      "needs": [
+        "steady"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:sweeping_damage_ratio",
+          "amount": 0.25,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "guard_1",
+      "title": "skills.node.combat.guard_1",
+      "icon": "minecraft:iron_chestplate",
+      "at": [
+        0,
+        3
+      ],
+      "cost": 1,
+      "perks": [
+        {
+          "attribute": "minecraft:armor",
+          "amount": 1,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "guard_2",
+      "title": "skills.node.combat.guard_2",
+      "icon": "minecraft:diamond_chestplate",
+      "at": [
+        1,
+        3
+      ],
+      "cost": 2,
+      "needs": [
+        "guard_1"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:armor_toughness",
+          "amount": 1,
+          "operation": "add_value"
+        }
+      ]
+    }
+  ]
+}

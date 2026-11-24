@@ -1,0 +1,237 @@
+{
+  "title": "skills.tree.exploration",
+  "icon": "minecraft:compass",
+  "background": "minecraft:block/grass_block_top",
+  "order": 4,
+  "curve": {
+    "base": 20,
+    "step": 10
+  },
+  "sources": [
+    {
+      "stat": "minecraft:custom",
+      "of": "minecraft:walk_one_cm",
+      "xp": 0.002
+    },
+    {
+      "stat": "minecraft:custom",
+      "of": "minecraft:sprint_one_cm",
+      "xp": 0.003
+    },
+    {
+      "stat": "minecraft:custom",
+      "of": "minecraft:swim_one_cm",
+      "xp": 0.004
+    },
+    {
+      "stat": "minecraft:custom",
+      "of": "minecraft:climb_one_cm",
+      "xp": 0.004
+    },
+    {
+      "stat": "minecraft:custom",
+      "of": "minecraft:horse_one_cm",
+      "xp": 0.002
+    },
+    {
+      "stat": "minecraft:custom",
+      "of": "minecraft:boat_one_cm",
+      "xp": 0.001
+    },
+    {
+      "stat": "minecraft:custom",
+      "of": "minecraft:aviate_one_cm",
+      "xp": 0.001
+    }
+  ],
+  "nodes": [
+    {
+      "id": "swift_1",
+      "title": "skills.node.exploration.swift_1",
+      "icon": "minecraft:leather_boots",
+      "at": [
+        0,
+        0
+      ],
+      "cost": 1,
+      "perks": [
+        {
+          "attribute": "minecraft:movement_speed",
+          "amount": 0.05,
+          "operation": "add_multiplied_base"
+        }
+      ]
+    },
+    {
+      "id": "swift_2",
+      "title": "skills.node.exploration.swift_2",
+      "icon": "minecraft:iron_boots",
+      "at": [
+        1,
+        0
+      ],
+      "cost": 2,
+      "needs": [
+        "swift_1"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:movement_speed",
+          "amount": 0.05,
+          "operation": "add_multiplied_base"
+        }
+      ]
+    },
+    {
+      "id": "swift_3",
+      "title": "skills.node.exploration.swift_3",
+      "icon": "minecraft:diamond_boots",
+      "at": [
+        2,
+        0
+      ],
+      "cost": 3,
+      "needs": [
+        "swift_2"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:movement_speed",
+          "amount": 0.1,
+          "operation": "add_multiplied_base"
+        }
+      ]
+    },
+    {
+      "id": "soft_1",
+      "title": "skills.node.exploration.soft_1",
+      "icon": "minecraft:white_wool",
+      "at": [
+        0,
+        1
+      ],
+      "cost": 1,
+      "perks": [
+        {
+          "attribute": "minecraft:safe_fall_distance",
+          "amount": 1,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "soft_2",
+      "title": "skills.node.exploration.soft_2",
+      "icon": "minecraft:hay_block",
+      "at": [
+        1,
+        1
+      ],
+      "cost": 2,
+      "needs": [
+        "soft_1"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:safe_fall_distance",
+          "amount": 2,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "feather_fall",
+      "title": "skills.node.exploration.feather_fall",
+      "icon": "minecraft:phantom_membrane",
+      "at": [
+        2,
+        1
+      ],
+      "cost": 3,
+      "needs": [
+        "soft_2"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:fall_damage_multiplier",
+          "amount": -0.25,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "leap",
+      "title": "skills.node.exploration.leap",
+      "icon": "minecraft:rabbit_foot",
+      "at": [
+        0,
+        2
+      ],
+      "cost": 1,
+      "perks": [
+        {
+          "attribute": "minecraft:jump_strength",
+          "amount": 0.05,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "stride",
+      "title": "skills.node.exploration.stride",
+      "icon": "minecraft:oak_stairs",
+      "at": [
+        1,
+        2
+      ],
+      "cost": 2,
+      "needs": [
+        "leap"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:step_height",
+          "amount": 0.4,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "lungs",
+      "title": "skills.node.exploration.lungs",
+      "icon": "minecraft:turtle_helmet",
+      "at": [
+        0,
+        3
+      ],
+      "cost": 1,
+      "perks": [
+        {
+          "attribute": "minecraft:oxygen_bonus",
+          "amount": 1,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "swimmer",
+      "title": "skills.node.exploration.swimmer",
+      "icon": "minecraft:trident",
+      "at": [
+        1,
+        3
+      ],
+      "cost": 2,
+      "needs": [
+        "lungs"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:water_movement_efficiency",
+          "amount": 0.33,
+          "operation": "add_value"
+        }
+      ]
+    }
+  ]
+}

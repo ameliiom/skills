@@ -1,0 +1,150 @@
+{
+  "title": "skills.tree.building",
+  "icon": "minecraft:bricks",
+  "background": "minecraft:block/oak_planks",
+  "order": 5,
+  "curve": {
+    "base": 20,
+    "step": 10
+  },
+  "sources": [
+    {
+      "block": "*",
+      "on": "placed",
+      "xp": 0.5
+    }
+  ],
+  "nodes": [
+    {
+      "id": "reach_1",
+      "title": "skills.node.building.reach_1",
+      "icon": "minecraft:scaffolding",
+      "at": [
+        0,
+        0
+      ],
+      "cost": 1,
+      "perks": [
+        {
+          "attribute": "minecraft:block_interaction_range",
+          "amount": 0.5,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "reach_2",
+      "title": "skills.node.building.reach_2",
+      "icon": "minecraft:ladder",
+      "at": [
+        1,
+        0
+      ],
+      "cost": 2,
+      "needs": [
+        "reach_1"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:block_interaction_range",
+          "amount": 1,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "reach_3",
+      "title": "skills.node.building.reach_3",
+      "icon": "minecraft:end_rod",
+      "at": [
+        2,
+        0
+      ],
+      "cost": 3,
+      "needs": [
+        "reach_2"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:block_interaction_range",
+          "amount": 1.5,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "crouch_1",
+      "title": "skills.node.building.crouch_1",
+      "icon": "minecraft:oak_slab",
+      "at": [
+        0,
+        1
+      ],
+      "cost": 1,
+      "perks": [
+        {
+          "attribute": "minecraft:sneaking_speed",
+          "amount": 0.15,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "crouch_2",
+      "title": "skills.node.building.crouch_2",
+      "icon": "minecraft:oak_trapdoor",
+      "at": [
+        1,
+        1
+      ],
+      "cost": 2,
+      "needs": [
+        "crouch_1"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:sneaking_speed",
+          "amount": 0.15,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "hands",
+      "title": "skills.node.building.hands",
+      "icon": "minecraft:item_frame",
+      "at": [
+        0,
+        2
+      ],
+      "cost": 1,
+      "perks": [
+        {
+          "attribute": "minecraft:entity_interaction_range",
+          "amount": 0.5,
+          "operation": "add_value"
+        }
+      ]
+    },
+    {
+      "id": "safe",
+      "title": "skills.node.building.safe",
+      "icon": "minecraft:hay_block",
+      "at": [
+        1,
+        2
+      ],
+      "cost": 2,
+      "needs": [
+        "hands"
+      ],
+      "perks": [
+        {
+          "attribute": "minecraft:safe_fall_distance",
+          "amount": 2,
+          "operation": "add_value"
+        }
+      ]
+    }
+  ]
+}

@@ -9,6 +9,7 @@
 //! - **Perks** (`perks.rs`): attribute modifiers derived from progress, reconciled on the player.
 //! - **Screen and toast** (`look.rs`; drawing in the build stage): the advancements screen's look.
 mod look;
+mod server;
 pub mod payloads;
 pub mod perks;
 pub mod progress;
@@ -18,9 +19,11 @@ mod store;
 pub mod tree;
 
 use mod_api::{
-    ClientHost, ClientTickPreEvent, GuiLayer, GuiLayerDrawEvent, GuiLayerPlacement, Hooks,
-    IPayloadContext, KeyRegistration, PayloadId, RegisterGuiLayersEvent, Registrar,
-    RegistrationContext, SettingSpec,
+    AddServerReloadListenersEvent, ClientHost, EntityPlaceEvent, ClientTickPreEvent, Flow, GuiLayer,
+    GuiLayerDrawEvent, GuiLayerPlacement, Hooks, Host, IPayloadContext, KeyRegistration,
+    PayloadId, PlayerDestroyedBlockEvent, PlayerLoadFromFileEvent, PlayerLoggedInEvent,
+    PlayerRespawnedEvent, PlayerSaveToFileEvent, PlayerStatAwardEvent, RegisterGuiLayersEvent,
+    Registrar, RegistrationContext, ServerHost, ServerTickEvent, ServerTickPhase, SettingSpec,
 };
 #[allow(unused_imports)]
 use mod_api::prelude::*;
@@ -32,7 +35,7 @@ const SCREEN_KEY: &str = "open";
 const LAYER: &str = "skills:toast";
 
 /// Settings (Options > Mods > Skills).
-mod setting {
+pub(crate) mod setting {
     pub const SHARE_RADIUS: &str = "share_radius";
     pub const SHARE_FRACTION: &str = "share_fraction";
     pub const TOASTS: &str = "toasts";
@@ -70,11 +73,6 @@ fn on_progress(sync: payloads::ProgressSync, _: &mut dyn IPayloadContext) -> Res
     Ok(())
 }
 
-/// Server: a click on a node (build stage: check with `Progress::unlock`, reconcile perks, answer
-/// with `ProgressSync`).
-fn on_unlock(_: payloads::Unlock, _: &mut dyn IPayloadContext) -> Result<(), String> {
-    Ok(())
-}
 
 #[derive(Default)]
 pub struct Mod;
@@ -98,7 +96,7 @@ impl Hooks for Mod {
         let mut view = handlers.registrar("1").optional();
         let _ = payloads::TREES.set(view.play_to_client_typed(PayloadId("skills:trees".into()), on_trees));
         let _ = payloads::PROGRESS.set(view.play_to_client_typed(PayloadId("skills:progress".into()), on_progress));
-        let _ = payloads::UNLOCK.set(view.play_to_server_typed(PayloadId("skills:unlock".into()), on_unlock));
+        let _ = payloads::UNLOCK.set(view.play_to_server_typed(PayloadId("skills:unlock".into()), server::unlock));
     }
 
     fn register_gui_layers(&self, _: &RegistrationContext, event: &mut RegisterGuiLayersEvent<'_>) {
@@ -115,11 +113,47 @@ impl Hooks for Mod {
     /// Client: the level-up toast (build stage).
     fn gui_layer_draw(&self, _host: &dyn ClientHost, _event: &mut GuiLayerDrawEvent<'_>) {}
 
-    // Build stage, server side, each a thin call into the pure modules above:
-    // - add_server_reload_listeners: `FileToIdConverter::json("skills")` → `tree::load`, log each
-    //   `Problem`, publish, resend `TreesSync` and reconcile every player's perks.
-    // - player_load_from_file / player_save_to_file: `store::read` / `store::write`.
-    // - player_logged_in, player_respawned: send trees and progress, reconcile perks.
-    // - player_stat_award, player_destroyed_block: `sources::gains` → `share::split` →
-    //   `Progress::earn` for each player → send progress.
+    fn add_server_reload_listeners(&self, _: &dyn Host, event: &mut AddServerReloadListenersEvent<'_>) {
+        server::add_listener(event.listeners);
+    }
+
+    fn server_tick(&self, host: &mut dyn ServerHost, event: &mut ServerTickEvent<'_>) {
+        if matches!(event.phase, ServerTickPhase::ServerTickEnd { .. }) {
+            server::tick(host);
+        }
+    }
+
+    fn player_load_from_file(&self, _: &mut dyn ServerHost, event: &mut PlayerLoadFromFileEvent<'_>) {
+        server::load(event.player, event.directory);
+    }
+
+    fn player_save_to_file(&self, _: &mut dyn ServerHost, event: &mut PlayerSaveToFileEvent<'_>) {
+        server::save(event.player, event.directory);
+    }
+
+    fn player_logged_in(&self, host: &mut dyn ServerHost, event: &mut PlayerLoggedInEvent<'_>) {
+        server::joined(host, event.player);
+    }
+
+    fn player_respawned(&self, host: &mut dyn ServerHost, event: &mut PlayerRespawnedEvent<'_>) {
+        server::respawned(host, event.player);
+    }
+
+    fn player_stat_award(&self, host: &mut dyn ServerHost, event: &mut PlayerStatAwardEvent<'_>) -> Flow {
+        let (stat_type, stat) = (event.stat_type.clone(), event.stat.clone());
+        server::stat(host, event.player, &stat_type, &stat, event.value);
+        Flow::Continue
+    }
+
+    fn player_destroyed_block(&self, host: &mut dyn ServerHost, event: &mut PlayerDestroyedBlockEvent) {
+        server::block(host, tree::BlockEvent::Broken, event.state, None);
+    }
+
+    /// A player placing a block (a mob's placement has no player and earns nothing).
+    fn entity_place(&self, host: &mut dyn ServerHost, event: &mut EntityPlaceEvent) -> Flow {
+        if let (Some(placer), false) = (event.placer, event.cancelled) {
+            server::block(host, tree::BlockEvent::Placed, event.state, Some(placer));
+        }
+        Flow::Continue
+    }
 }
