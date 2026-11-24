@@ -197,15 +197,26 @@ pub fn respawned(uuid: u128) {
 /// Whether the client took the trees.
 fn send_trees(host: &mut dyn ServerHost, player: PlayerRef) -> bool {
     let Some(token) = payloads::TREES.get() else { return true };
-    let json = with(|s| payloads::Json::of(&s.trees));
-    let sent = token.send(host, player, &TreesSync { json });
-    sent.is_ok()
+    let json = match with(|s| payloads::Json::of(&s.trees)) {
+        Ok(json) => json,
+        Err(e) => {
+            eprintln!("[skills] trees as JSON: {e}");
+            return true;
+        }
+    };
+    token.send(host, player, &TreesSync { json }).is_ok()
 }
 
 /// Whether the client took its progress.
 fn send_progress(host: &mut dyn ServerHost, player: PlayerRef) -> bool {
     let Some(token) = payloads::PROGRESS.get() else { return true };
-    let json = with(|s| payloads::Json::of(&s.players.get(&player.uuid()).cloned().unwrap_or_default()));
+    let json = match with(|s| payloads::Json::of(&s.players.get(&player.uuid()).cloned().unwrap_or_default())) {
+        Ok(json) => json,
+        Err(e) => {
+            eprintln!("[skills] progress of {} as JSON: {e}", uuid_text(player.uuid()));
+            return true;
+        }
+    };
     token.send(host, player, &ProgressSync { json }).is_ok()
 }
 

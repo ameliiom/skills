@@ -361,6 +361,15 @@ mod shipped {
             serde_json::from_slice(&std::fs::read(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/skills/lang/en_us.json")).unwrap()).unwrap();
         let ar: serde_json::Value =
             serde_json::from_slice(&std::fs::read(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/skills/lang/ar_sa.json")).unwrap()).unwrap();
+        let keys = |v: &serde_json::Value| v.as_object().unwrap().keys().cloned().collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(keys(&en), keys(&ar), "en_us and ar_sa differ");
+        let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        for file in std::fs::read_dir(src).unwrap() {
+            let text = std::fs::read_to_string(file.unwrap().path()).unwrap();
+            for used in text.split("tr(host, \"").skip(1).map(|r| &r[..r.find('"').unwrap()]) {
+                assert!(en.get(used).is_some(), "the code asks for {used}, missing from en_us");
+            }
+        }
         for t in &trees.0 {
             assert!((8..=40).contains(&t.total_cost()), "{} costs {}", t.id, t.total_cost());
             let keys = std::iter::once(t.title.clone()).chain(t.nodes.iter().filter_map(|n| n.title.clone()));

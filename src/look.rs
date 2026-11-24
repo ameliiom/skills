@@ -64,6 +64,32 @@ pub fn tabs_fit(window: Rect) -> usize {
     ((window[2] + 4.0) / (TAB[0] + 4.0)).floor().max(0.0) as usize
 }
 
+/// What a tab on the window's top edge opens.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Tab {
+    /// A tree, by its index among all trees.
+    Tree(usize),
+    /// The next page of trees, when they don't all fit (wraps to the first).
+    More(usize),
+}
+
+/// The tabs shown for `total` trees with `selected` open: the selected tree's page, and a last
+/// tab that turns to the next page when the trees don't fit. The single owner of tab layout, for
+/// drawing, hovering and clicking.
+pub fn tabs(window: Rect, total: usize, selected: usize, rtl: bool) -> Vec<(Tab, Rect)> {
+    let fit = tabs_fit(window);
+    let per = if total <= fit { total } else { fit.saturating_sub(1).max(1) };
+    if per == 0 {
+        return Vec::new();
+    }
+    let first = selected.min(total - 1) / per * per;
+    let mut shown: Vec<Tab> = (first..total.min(first + per)).map(Tab::Tree).collect();
+    if per < total {
+        shown.push(Tab::More(if first + per >= total { 0 } else { first + per }));
+    }
+    shown.into_iter().enumerate().map(|(slot, t)| (t, tab(window, slot, rtl))).collect()
+}
+
 /// A node's frame for grid cell `at`, with the tree panned by `pan`; Arabic grows right to left.
 pub fn node(inside: Rect, at: [i32; 2], pan: [f32; 2], rtl: bool) -> Rect {
     let [ix, iy, iw, _] = inside;
@@ -240,6 +266,30 @@ mod tests {
         assert_eq!(toast_slide(0.0, 100.0, 6.0), 0.0);
         assert_eq!(toast_slide(50.0, 100.0, 6.0), 1.0);
         assert_eq!(toast_slide(100.0, 100.0, 6.0), 0.0);
+    }
+
+    #[test]
+    fn every_tree_is_reachable_through_the_pages() {
+        let w = window([200.0, 240.0]);
+        let fit = tabs_fit(w);
+        for total in [0, 1, fit, fit + 1, fit * 3 + 2] {
+            let mut seen = std::collections::BTreeSet::new();
+            let mut selected = 0;
+            for _ in 0..total + 1 {
+                let shown = tabs(w, total, selected, false);
+                assert!(shown.len() <= fit);
+                for (t, _) in &shown {
+                    if let Tab::Tree(i) = t {
+                        seen.insert(*i);
+                    }
+                }
+                match shown.last() {
+                    Some((Tab::More(next), _)) => selected = *next,
+                    _ => break,
+                }
+            }
+            assert_eq!(seen.len(), total, "{total} trees, {fit} fit");
+        }
     }
 
     #[test]

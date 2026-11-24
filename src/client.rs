@@ -113,7 +113,15 @@ fn tree_name(host: &dyn ClientHost, tree: &Tree) -> String {
 
 // ---- Screen ----
 
-fn current<'a>(seen: &'a Seen, tab: usize) -> Option<&'a Tree> {
+/// A tab's icon: its tree's, or an arrow for the next page.
+fn tab_icon(seen: &Seen, tab: look::Tab) -> &str {
+    match tab {
+        look::Tab::Tree(i) => &seen.trees.0[i].icon,
+        look::Tab::More(_) => "minecraft:spectral_arrow",
+    }
+}
+
+fn current(seen: &Seen, tab: usize) -> Option<&Tree> {
     seen.trees.0.get(tab.min(seen.trees.0.len().saturating_sub(1)))
 }
 
@@ -264,11 +272,13 @@ pub fn draw_screen(host: &dyn ClientHost, draw: &mut dyn DrawContext, mouse: [f3
     let rect = |n: &Node| look::node(inside, n.at, pan, rtl);
 
     // Tabs behind the window, then the tree, then the window, then the selected tab over it.
-    let shown_tabs = seen.trees.0.len().min(look::tabs_fit(window));
-    for (i, t) in seen.trees.0.iter().take(shown_tabs).enumerate().filter(|(i, _)| *i != tab) {
-        let r = look::tab(window, i, rtl);
-        blit(draw, &sprite::tab(i == 0, false, rtl), r, 0xFFFF_FFFF, None);
-        icon(host, draw, &t.icon, [r[0] + 6.0, r[1] + 9.0]);
+    let tabs = look::tabs(window, seen.trees.0.len(), tab, rtl);
+    for (slot, (t, r)) in tabs.iter().enumerate() {
+        if *t == look::Tab::Tree(tab) {
+            continue;
+        }
+        blit(draw, &sprite::tab(slot == 0, false, rtl), *r, 0xFFFF_FFFF, None);
+        icon(host, draw, tab_icon(seen, *t), [r[0] + 6.0, r[1] + 9.0]);
     }
     if draw.push_clip(inside).is_ok() {
         background(draw, &tree.background, inside, pan);
@@ -287,9 +297,8 @@ pub fn draw_screen(host: &dyn ClientHost, draw: &mut dyn DrawContext, mouse: [f3
         let _ = draw.pop_clip();
     }
     window_frame(draw, window);
-    if tab < shown_tabs {
-        let r = look::tab(window, tab, rtl);
-        blit(draw, &sprite::tab(tab == 0, true, rtl), r, 0xFFFF_FFFF, None);
+    if let Some((slot, (_, r))) = tabs.iter().enumerate().find(|(_, (t, _))| *t == look::Tab::Tree(tab)) {
+        blit(draw, &sprite::tab(slot == 0, true, rtl), *r, 0xFFFF_FFFF, None);
         icon(host, draw, &tree.icon, [r[0] + 6.0, r[1] + 9.0]);
     }
 
@@ -318,8 +327,12 @@ pub fn draw_screen(host: &dyn ClientHost, draw: &mut dyn DrawContext, mouse: [f3
     draw.text(&points, parts.points, TITLE, false);
 
     // Hover: a tab's name, or a node's tooltip.
-    if let Some(i) = (0..shown_tabs).find(|i| look::contains(look::tab(window, *i, rtl), mouse)) {
-        let _ = draw.gui_tooltip(&[Text::literal(tree_name(host, &seen.trees.0[i]))], mouse);
+    if let Some((t, _)) = tabs.iter().find(|(_, r)| look::contains(*r, mouse)) {
+        let name = match t {
+            look::Tab::Tree(i) => tree_name(host, &seen.trees.0[*i]),
+            look::Tab::More(_) => tr(host, "skills.more", "More skills"),
+        };
+        let _ = draw.gui_tooltip(&[Text::literal(name)], mouse);
         return;
     }
     if !look::contains(inside, mouse) {
@@ -363,8 +376,10 @@ fn click(host: &dyn ClientHost, mouse: [f32; 2]) {
     let inside = look::inside(window);
     let seen_guard = lock(&SEEN);
     let Some(seen) = seen_guard.as_ref() else { return };
-    let tabs = seen.trees.0.len().min(look::tabs_fit(window));
-    if let Some(i) = (0..tabs).find(|i| look::contains(look::tab(window, *i, rtl), mouse)) {
+    let selected = ui(|u| u.tab).min(seen.trees.0.len().saturating_sub(1));
+    let tabs = look::tabs(window, seen.trees.0.len(), selected, rtl);
+    if let Some((t, _)) = tabs.iter().find(|(_, r)| look::contains(*r, mouse)) {
+        let (look::Tab::Tree(i) | look::Tab::More(i)) = *t;
         ui(|u| u.tab = i);
         let _ = host.play_local_sound(&SoundPlay::ui("minecraft:ui.button.click"), 0);
         return;

@@ -46,7 +46,7 @@ corrects every player on the next reload, with no migration).
 
 - A perk is an attribute modifier: `{"attribute": "minecraft:block_break_speed", "amount": 0.1,
   "operation": "add_multiplied_base"}`. Any attribute the game or a mod registers works.
-- Modifier ids are `skills:<tree path>/<node>` so they never collide and are found again on reload.
+- Modifier ids are `skills:<tree namespace>/<tree path>/<node>/<n>` (`n` = the perk's place in the node) so they never collide and are found again on reload.
 - Applied as transient modifiers rebuilt from progress (join, respawn, unlock, reload), so a deleted
   node or a changed amount never leaves a stale modifier saved on the player.
 
@@ -57,11 +57,13 @@ Built in the advancements screen's own look, from the game's sprites:
 - The advancements window frame (`gui/advancements/window.png`, drawn nine-slice by its 9/18/9/9
   border) filling the screen but for a 16-pixel margin, so more of a tree shows than vanilla's fixed
   252×140 window. One tab per tree on top (the tree's icon, the `tab_above_*` sprites), from the
-  reading start; tabs that don't fit scroll with two arrows as vanilla's pages do.
+  reading start. When the trees don't fit, the last tab (a spectral arrow, "More skills") turns to
+  the next page of tabs and wraps back to the first, so every tree stays one or two clicks away
+  with no space taken outside the window.
 - The tree's background tiled from a block texture (stone for Mining, dirt for Farming…), dragged to
   pan like the advancements map.
 - Each node in the advancement frames: **gold frame** = unlocked, **plain frame** = open (enough
-  points, needs met), **dark frame and grey icon** = locked. Connections drawn as the advancement
+  points, needs met), **dark frame and darkened icon** = locked. Connections drawn as the advancement
   lines (white over black).
 - At the top of the window: the tree's level as the green experience number, the experience bar
   sprite filled to the next level, and points left.
@@ -116,13 +118,13 @@ extends them. Their balance follows the idea of Default Skill Trees (CC0):
 
 | Tree | Earns from | Perks |
 |---|---|---|
-| Combat | kills (`minecraft:killed`, more for hostile mobs), damage dealt | attack damage, attack speed, max health, armour, knockback resistance, sweeping |
-| Mining | mined pickaxe blocks, more for ores | mining speed, submerged mining, block reach, luck |
-| Farming | grown crops, breeding, fishing | max health, luck |
-| Exploration | walking, swimming, riding, flying with elytra | speed, safe fall distance, jump, step height, oxygen, water movement |
-| Building | placed blocks (`minecraft:used` of block items) | block reach, sneaking speed, step height, entity reach |
+| Combat | kills (`minecraft:killed`), damage dealt | attack damage, attack speed, max health, armour, armour toughness, knockback resistance, sweeping |
+| Mining | pickaxe and shovel blocks, more for ores | mining speed, mining efficiency, submerged mining, burning time, luck |
+| Farming | fully grown crops, melons, pumpkins, breeding, fishing | max health, luck, entity reach |
+| Exploration | walking, sprinting, swimming, climbing, riding, flying | speed, safe fall distance, fall damage, jump, step height, oxygen, water movement |
+| Building | placed blocks (a `placed` block source) | block reach, sneaking speed, entity reach, safe fall distance |
 
-Each tree: 10–14 nodes in two or three branches, 30–40 levels to fill.
+Each tree: 7–11 nodes in two or three branches, 8–40 points to fill (a test holds every shipped tree to that range), curve 20 + 10 × level.
 
 ## 9. Network
 

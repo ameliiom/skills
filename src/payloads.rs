@@ -16,8 +16,8 @@ pub struct Json {
 const PART: usize = 4000;
 
 impl Json {
-    pub fn of<T: serde::Serialize>(value: &T) -> Self {
-        let text = serde_json::to_string(value).unwrap_or_default();
+    pub fn of<T: serde::Serialize>(value: &T) -> Result<Self, String> {
+        let text = serde_json::to_string(value).map_err(|e| e.to_string())?;
         let mut parts = Vec::new();
         let mut rest = text.as_str();
         while !rest.is_empty() {
@@ -28,7 +28,7 @@ impl Json {
             parts.push(rest[..cut].to_owned());
             rest = &rest[cut..];
         }
-        Self { parts }
+        Ok(Self { parts })
     }
 
     pub fn read<T: serde::de::DeserializeOwned>(&self) -> Result<T, String> {
@@ -48,20 +48,6 @@ pub struct ProgressSync {
     pub json: Json,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn long_and_arabic_json_round_trips_in_parts_under_the_limit() {
-        let value: Vec<String> = (0..2000).map(|i| format!("مهارة {i}")).collect();
-        let json = Json::of(&value);
-        assert!(json.parts.len() > 1);
-        assert!(json.parts.iter().all(|p| p.len() <= 4096));
-        assert_eq!(json.read::<Vec<String>>().unwrap(), value);
-    }
-}
-
 /// Client → server: a click on an open node. The server checks it and answers with progress.
 #[derive(PayloadCodec, Clone)]
 pub struct Unlock {
@@ -72,3 +58,17 @@ pub struct Unlock {
 pub static TREES: OnceLock<ToClient<TreesSync>> = OnceLock::new();
 pub static PROGRESS: OnceLock<ToClient<ProgressSync>> = OnceLock::new();
 pub static UNLOCK: OnceLock<ToServer<Unlock>> = OnceLock::new();
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn long_and_arabic_json_round_trips_in_parts_under_the_limit() {
+        let value: Vec<String> = (0..2000).map(|i| format!("مهارة {i}")).collect();
+        let json = Json::of(&value).unwrap();
+        assert!(json.parts.len() > 1);
+        assert!(json.parts.iter().all(|p| p.len() <= 4096));
+        assert_eq!(json.read::<Vec<String>>().unwrap(), value);
+    }
+}

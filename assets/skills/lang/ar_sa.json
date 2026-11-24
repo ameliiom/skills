@@ -1,6 +1,7 @@
 {
   "key.skills.open": "المهارات",
   "skills.points": "النقاط: %s",
+  "skills.more": "مهارات أكثر",
   "skills.cost": "التكلفة: %s",
   "skills.toast.point": "+%s نقطة",
   "skills.not_served": "مود المهارات غير موجود في هذا السيرفر",

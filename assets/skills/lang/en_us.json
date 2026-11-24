@@ -1,6 +1,7 @@
 {
   "key.skills.open": "Skills",
   "skills.points": "Points: %s",
+  "skills.more": "More skills",
   "skills.cost": "Cost: %s",
   "skills.toast.point": "+%s point",
   "skills.not_served": "Skills is not on this server",
