@@ -29,10 +29,8 @@ pub fn split<K: Copy + PartialEq>(earner: &Near<'_, K>, xp: f64, others: &[Near<
     if share <= 0.0 || rules.radius <= 0.0 {
         return out;
     }
-    let r2 = rules.radius * rules.radius;
     for o in others {
-        let d2: f64 = (0..3).map(|i| (o.at[i] - earner.at[i]).powi(2)).sum();
-        if o.id != earner.id && o.dimension == earner.dimension && d2 <= r2 {
+        if o.id != earner.id && o.dimension == earner.dimension && crate::kit::near::within(o.at, earner.at, rules.radius) {
             out.push((o.id, share));
         }
     }

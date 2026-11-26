@@ -363,10 +363,7 @@ mod shipped {
         assert_eq!(trees.0.len(), 5);
         let en: serde_json::Value =
             serde_json::from_slice(&std::fs::read(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/skills/lang/en_us.json")).unwrap()).unwrap();
-        let ar: serde_json::Value =
-            serde_json::from_slice(&std::fs::read(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/skills/lang/ar_sa.json")).unwrap()).unwrap();
-        let keys = |v: &serde_json::Value| v.as_object().unwrap().keys().cloned().collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(keys(&en), keys(&ar), "en_us and ar_sa differ");
+        // (That both languages hold the same keys is the workspace's `tools/lang_gate.py`.)
         let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
         for file in std::fs::read_dir(src).unwrap() {
             let text = std::fs::read_to_string(file.unwrap().path()).unwrap();
@@ -378,7 +375,7 @@ mod shipped {
             assert!((8..=40).contains(&t.total_cost()), "{} costs {}", t.id, t.total_cost());
             let keys = std::iter::once(t.title.clone()).chain(t.nodes.iter().filter_map(|n| n.title.clone()));
             for key in keys {
-                assert!(en.get(&key).is_some() && ar.get(&key).is_some(), "untranslated {key}");
+                assert!(en.get(&key).is_some(), "untranslated {key}");
             }
         }
     }

@@ -4,7 +4,7 @@ use crate::look::{self, sprite, Rect};
 use crate::payloads::{self, Unlock};
 use crate::progress::{NodeState, Progress, View};
 use crate::tree::{Node, Perk, Tree, Trees};
-use crate::{lock, rtl, Seen, MOD_ID, SEEN};
+use crate::{kit::rtl, lock, Seen, MOD_ID, SEEN};
 use mod_api::client::hud_layout::Blend;
 use mod_api::text::TextStyle;
 use mod_api::{
@@ -77,9 +77,7 @@ pub fn progressed(trees: &Trees, before: &Progress, after: &Progress) {
     });
 }
 
-fn tr(host: &dyn ClientHost, key: &str, fallback: &str) -> String {
-    host.translate(key).unwrap_or_else(|| fallback.to_owned())
-}
+use crate::kit::lang::tr;
 
 /// One of the game's GUI sprites as vanilla's `blitSprite` draws it, tinted; `region` is
 /// `[sprite w, sprite h, u, v]` to draw only part of it.
@@ -429,7 +427,7 @@ pub fn drag(host: &dyn ClientHost, button: i32, delta: [f32; 2]) -> bool {
 // ---- Toast ----
 
 pub fn draw_toasts(host: &dyn ClientHost, draw: &mut dyn DrawContext) {
-    if !host.setting(MOD_ID, crate::setting::TOASTS).is_none_or(|v| v.trim() != "false") {
+    if !crate::setting::TOASTS.read(host, MOD_ID) {
         return;
     }
     // The game's toast corner (top right in every language, as vanilla's toasts); Arabic mirrors

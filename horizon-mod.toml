@@ -1,6 +1,6 @@
 id = "skills"
 name = "Skills"
-version = "0.2.1"
+version = "0.2.2"
 description = "Earn skill experience by playing, share it with friends nearby, and unlock permanent perks in skill trees."
 authors = ["ameliiom"]
 license = "MIT"
@@ -9,6 +9,10 @@ api = "0.2"
 side = "both"
 # registries: required for content mods (the launcher asks for it).
 capabilities = ["registries"]
+
+[dependencies]
+# The shared code of ameliiom's mods (settings, comforts, inventory, outline, ...).
+kit = "^0.1"
 
 [native]
 game = "26.3"

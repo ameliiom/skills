@@ -8,9 +8,16 @@
 //!   into tree experience; friends nearby earn a share.
 //! - **Perks** (`perks.rs`): attribute modifiers derived from progress, reconciled on the player.
 //! - **Screen and toast** (`look.rs`; drawing in the build stage): the advancements screen's look.
+// Kit (ameliiom/kit), the shared code: the installed Kit mod, or its source in place for
+// local builds (`kit_local`, horizon-mods/.cargo/config.toml).
+#[cfg(kit_local)]
+#[allow(dead_code)]
+#[path = "../../kit/src/lib.rs"]
+mod kit;
+#[cfg(not(kit_local))]
+use ::kit;
 mod client;
 mod look;
-mod rtl;
 mod server;
 pub mod payloads;
 pub mod perks;
@@ -27,7 +34,7 @@ use mod_api::{
     PayloadId, PlayerDestroyedBlockEvent, PlayerLoadFromFileEvent, PlayerLoggedInEvent,
     PlayerRespawnedEvent, PlayerSaveToFileEvent, PlayerStatAwardEvent, RegisterGuiLayersEvent,
     Registrar, RegistrationContext, ScreenMouseButtonPressedPreEvent, ScreenMouseDraggedPreEvent,
-    ScreenRenderPostEvent, ServerHost, ServerTickEvent, ServerTickPhase, SettingSpec,
+    ScreenRenderPostEvent, ServerHost, ServerTickEvent, ServerTickPhase,
     ClientPlayerLoggingOutEvent,
 };
 #[allow(unused_imports)]
@@ -41,9 +48,10 @@ const LAYER: &str = "skills:toast";
 
 /// Settings (Options > Mods > Skills).
 pub(crate) mod setting {
-    pub const SHARE_RADIUS: &str = "share_radius";
-    pub const SHARE_FRACTION: &str = "share_fraction";
-    pub const TOASTS: &str = "toasts";
+    use crate::kit::setting::{Number, Toggle};
+    pub const SHARE_RADIUS: Number = Number { key: "share_radius", min: 0.0, max: 128.0, step: 1.0, default: 32.0 };
+    pub const SHARE_FRACTION: Number = Number { key: "share_fraction", min: 0.0, max: 1.0, step: 0.05, default: 0.5 };
+    pub const TOASTS: Toggle = Toggle::on("toasts");
 }
 
 /// What the client knows: the server's trees and this player's progress, as last sent.
@@ -66,9 +74,7 @@ pub fn has_tag(tag: &str) -> bool {
     lock(&SEEN).as_ref().is_some_and(|s| s.served && perks::tags(&s.trees, &s.progress).0.contains(tag))
 }
 
-pub(crate) fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
-    m.lock().unwrap_or_else(|e| e.into_inner())
-}
+pub(crate) use kit::sync::lock;
 
 /// Client: the server's trees arrived.
 fn on_trees(sync: payloads::TreesSync, _: &mut dyn IPayloadContext) -> Result<(), String> {
@@ -106,11 +112,7 @@ impl Hooks for Mod {
         let mut key = KeyRegistration::new(SCREEN_KEY, "key.keyboard.k");
         key.label = "key.skills.open".into();
         r.register_key_mapping(key);
-        for spec in [
-            SettingSpec::range(setting::SHARE_RADIUS, "skills.config.share_radius", 0.0, 128.0, 1.0, 32.0),
-            SettingSpec::range(setting::SHARE_FRACTION, "skills.config.share_fraction", 0.0, 1.0, 0.05, 0.5),
-            SettingSpec::toggle(setting::TOASTS, "skills.config.toasts", true),
-        ] {
+        for spec in [setting::SHARE_RADIUS.spec(MOD_ID), setting::SHARE_FRACTION.spec(MOD_ID), setting::TOASTS.spec(MOD_ID)] {
             let _ = r.register_setting(spec);
         }
         let mut handlers = r.payload_handlers();

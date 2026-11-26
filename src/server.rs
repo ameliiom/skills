@@ -257,12 +257,9 @@ fn earn(host: &mut dyn ServerHost, uuid: u128, gains: Vec<(String, f64)>) {
     if gains.is_empty() {
         return;
     }
-    let number = |key: &str, default: f64| {
-        host.setting(crate::MOD_ID, key).and_then(|v| v.trim().parse().ok()).unwrap_or(default)
-    };
     let rules = share::Rules {
-        radius: number(crate::setting::SHARE_RADIUS, 32.0),
-        fraction: number(crate::setting::SHARE_FRACTION, 0.5),
+        radius: crate::setting::SHARE_RADIUS.read(&*host, crate::MOD_ID),
+        fraction: crate::setting::SHARE_FRACTION.read(&*host, crate::MOD_ID),
     };
     let everyone = host.players().server_players();
     let read: &dyn Host = &*host;
