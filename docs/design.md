@@ -152,3 +152,9 @@ server". A client without Skills still plays; its player earns nothing.
 - Perks with game effects of their own (bonus crop drops, auto-smelt). Since 0.2 a perk can be a
   vanilla player tag (`{"tag": "storage.find"}`): another mod reads it and offers the comfort.
 - Experience for blocks a player placed and broke again (ores): counted as vanilla counts them.
+
+## Tags for client-side mods (0.2.1, 2026-11-26)
+
+`skills::has_tag(tag)` answers on a client whether this player has unlocked a node giving `tag`,
+from the trees and progress the server sent. A client-only mod (Map) gates a comfort with it, since
+the tag itself lives on the server player only.

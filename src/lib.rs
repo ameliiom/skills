@@ -59,6 +59,13 @@ pub(crate) struct Seen {
 
 pub(crate) static SEEN: Mutex<Option<Seen>> = Mutex::new(None);
 
+/// On a client: whether this player has unlocked a node that gives the tag `tag`, as the server
+/// last told. Other client-side mods read their comforts here (the tag itself lives on the
+/// server's player only). False before progress arrives or when the server has no Skills.
+pub fn has_tag(tag: &str) -> bool {
+    lock(&SEEN).as_ref().is_some_and(|s| s.served && perks::tags(&s.trees, &s.progress).0.contains(tag))
+}
+
 pub(crate) fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     m.lock().unwrap_or_else(|e| e.into_inner())
 }
